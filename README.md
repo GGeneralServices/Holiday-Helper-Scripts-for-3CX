@@ -15,7 +15,7 @@ Closure Helper for 3CX lets non-technical administrative staff quickly add holid
 
 **What it does**
 
-- **Add an Unscheduled Closure:** choose the departments (or Select All), enter the date, and the script creates an all-day, one-time closure in each department. The closure plays closure greeting with the filename you specify in the settings file.
+- **Add an Unscheduled Closure:** choose the departments (or Select All), enter the date, and the script creates an all-day, one-time closure in each department. The closure plays the closure greeting with the filename you specify in the settings file.
 - **View or Remove Unscheduled Closures:** lists the departments that have an upcoming closure, so you can remove one or more closures across those departments at once.
 
 **How it works**
@@ -29,7 +29,7 @@ Closure Helper for 3CX lets non-technical administrative staff quickly add holid
 
 Holiday Helper for 3CX lets 3CX administrators add holidays and events to many departments at the same time, instead of one department at a time in the admin console. It includes everything in Closure Helper for 3CX, plus:
 
-- **Add a Holiday:** Pick holidays to add from a preset list you configure in the script itself. (Via the Manage Holiday List function), Pick the departments to add the holidays to, and one or more years to generate the holidays for. Holiday dates are calculated automatically for the years you entered. Including holidays that don't occur on a set date, like "4th Thursday of November".
+- **Add a Holiday:** pick holidays from a preset list (stored in the settings file and edited with Manage Holiday List), choose the departments, and enter one or more years. Dates are calculated automatically for each year, including holidays that don't fall on a set date, like "4th Thursday of November".
 - **Weekend holidays:** A holiday that falls on a weekend can be moved to the Friday before or the Monday after and labeled, for example `Christmas Day (Observed) 2027`. This behavior is configurable.
 - **Add a Special Event:** a one-time event on a specific date, either all day or with start and end times. (The greeting used is set in the settings file)
 - **Manage Holiday List:** add, edit, or remove the holidays offered by Add a Holiday, using guided prompts.
