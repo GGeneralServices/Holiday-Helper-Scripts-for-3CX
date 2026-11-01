@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Closure Helper for 3CX: a menu-driven tool for adding and removing 3CX department weather closures.
+    Closure Helper for 3CX: a menu-driven tool for adding and removing 3CX department unscheduled closures.
 
 .PARAMETER Test
     Read from 3CX but do not write anything. Summaries show what would have been changed.
@@ -54,10 +54,10 @@ $SettingsDefinition = @(
     @{ Var = 'ExcludedDepartments'; Path = 'ExcludedDepartments'; Default = @('DEFAULT')
        Help = 'Department names, exactly as shown in 3CX, to hide from department lists.' }
 
-    @{ Var = 'WeatherHolidayName'; Path = 'WeatherClosure.HolidayName'; Default = 'Weather Closure'; Required = $true
-       Help = 'Name given to weather closure holidays in 3CX.' }
-    @{ Var = 'WeatherGreeting'; Path = 'WeatherClosure.GreetingFileName'; Default = ''; Required = $true
-       Help = 'Greeting played during a weather closure, exactly as named in 3CX (e.g. Weather Closure.wav).' }
+    @{ Var = 'UnscheduledClosureName'; Path = 'UnscheduledClosure.HolidayName'; Default = 'Unscheduled Closure'; Required = $true
+       Help = 'Name given to unscheduled closure holidays in 3CX.' }
+    @{ Var = 'UnscheduledClosureGreeting'; Path = 'UnscheduledClosure.GreetingFileName'; Default = ''; Required = $true
+       Help = 'Greeting played during an unscheduled closure, exactly as named in 3CX (e.g. Unscheduled Closure.wav).' }
 
     @{ Var = 'HolidayGreeting'; Path = 'HolidaysAndEvents.GreetingFileName'; Default = ''; Required = $true; Holiday = $true
        Help = 'Greeting played on holidays and special events, exactly as named in 3CX.' }
@@ -405,8 +405,8 @@ function Get-Departments {
     if ($UseMockData) {
         $groups = @(
             @{ Id = 28; Name = "DEFAULT";       Number = "GRP0000"; OfficeHolidays = @() }
-            @{ Id = 35; Name = "Front Office";  Number = "GRP0001"; OfficeHolidays = @(@{ Id = 1; Name = "Weather Closure"; Day = 15; Month = 1;  Year = 2026 }) }
-            @{ Id = 36; Name = "Sales";         Number = "GRP0002"; OfficeHolidays = @(@{ Id = 2; Name = "Weather Closure"; Day = 20; Month = 12; Year = 2026 }) }
+            @{ Id = 35; Name = "Front Office";  Number = "GRP0001"; OfficeHolidays = @(@{ Id = 1; Name = "Unscheduled Closure"; Day = 15; Month = 1;  Year = 2026 }) }
+            @{ Id = 36; Name = "Sales";         Number = "GRP0002"; OfficeHolidays = @(@{ Id = 2; Name = "Unscheduled Closure"; Day = 20; Month = 12; Year = 2026 }) }
             @{ Id = 37; Name = "Support";       Number = "GRP0003"; OfficeHolidays = @() }
         )
     }
@@ -584,10 +584,10 @@ function Get-HolidayDate($Holiday) {
 }
 
 function Get-RemovableClosures($Department, [datetime]$Today) {
-    # Current/future (non-recurring) Weather Closures on a department
+    # Current/future (non-recurring) Unscheduled Closures on a department
     @($Department.Holidays | Where-Object {
         $d = Get-HolidayDate $_
-        $_.Name -like "*$WeatherHolidayName*" -and $d -and $d -ge $Today
+        $_.Name -like "*$UnscheduledClosureName*" -and $d -and $d -ge $Today
     })
 }
 
@@ -608,7 +608,7 @@ function New-HolidayBody($Name, [datetime]$Date, $GroupNumber, $Prompt, $Start =
     }
 }
 
-function Show-ClosureSummary($Items, [string]$Action = "added", [string]$Label = "Weather Closures") {
+function Show-ClosureSummary($Items, [string]$Action = "added", [string]$Label = "Unscheduled Closures") {
     Write-Host ""
     if ($Test) {
         Write-Host "=== Summary (TEST MODE - no changes made) ===" -ForegroundColor Yellow
@@ -630,7 +630,7 @@ function Show-ClosureSummary($Items, [string]$Action = "added", [string]$Label =
 # ============================================================
 # Menu actions (return $true to quit, $false for main menu)
 # ============================================================
-function Add-WeatherClosure {
+function Add-UnscheduledClosure {
     # Step 1: departments (M) -> Step 2: date (B/M)
     $step = 1
     while ($step -le 2) {
@@ -656,23 +656,23 @@ function Add-WeatherClosure {
     foreach ($dept in $selectedDepartments) {
         Write-Host ""
         Write-Host "$($dept.Name):" -ForegroundColor Cyan
-        $holidayName = $WeatherHolidayName
+        $holidayName = $UnscheduledClosureName
 
         try {
-            $existing = $dept.Holidays | Where-Object { $_.Name -eq $WeatherHolidayName } | Select-Object -First 1
+            $existing = $dept.Holidays | Where-Object { $_.Name -eq $UnscheduledClosureName } | Select-Object -First 1
 
             if ($existing) {
                 $existingDate = Get-HolidayDate $existing
 
                 if ($existingDate -and ($existingDate -lt $today -or $existingDate -eq $closureDate)) {
-                    Write-Host "  $(Format-Action 'Removing' 'remove') existing '$WeatherHolidayName' ($($existingDate.ToString('MM/dd/yyyy')))"
+                    Write-Host "  $(Format-Action 'Removing' 'remove') existing '$UnscheduledClosureName' ($($existingDate.ToString('MM/dd/yyyy')))"
                     Invoke-3CXApi -Method Delete -Path "Holidays($($existing.Id))" | Out-Null
                     if (-not (Confirm-HolidayDeleted $existing.Id)) {
-                        throw "Existing '$WeatherHolidayName' could not be verified as removed. New holiday not added."
+                        throw "Existing '$UnscheduledClosureName' could not be verified as removed. New holiday not added."
                     }
                 }
                 else {
-                    $holidayName = "$WeatherHolidayName - $($closureDate.ToString('MM-dd-yyyy'))"
+                    $holidayName = "$UnscheduledClosureName - $($closureDate.ToString('MM-dd-yyyy'))"
                     if ($dept.Holidays.Name -contains $holidayName) {
                         Write-Host "  '$holidayName' already exists. Skipped." -ForegroundColor Yellow
                         continue
@@ -680,7 +680,7 @@ function Add-WeatherClosure {
                 }
             }
 
-            $body = New-HolidayBody -Name $holidayName -Date $closureDate -GroupNumber $dept.Number -Prompt $WeatherGreeting
+            $body = New-HolidayBody -Name $holidayName -Date $closureDate -GroupNumber $dept.Number -Prompt $UnscheduledClosureGreeting
             $response = Invoke-3CXApi -Method Post -Path "Holidays" -Body $body
             $problems = Confirm-HolidayCreated $response $body
             if ($problems) { throw "Verification failed: $($problems -join ', ')" }
@@ -701,7 +701,7 @@ function Add-WeatherClosure {
     return (Read-NextAction)
 }
 
-function Remove-WeatherClosure {
+function Remove-UnscheduledClosure {
     $today = (Get-Date).Date
     try {
         $withClosures = @(Get-Departments |
@@ -715,7 +715,7 @@ function Remove-WeatherClosure {
 
     if (-not $withClosures) {
         Write-Host ""
-        Write-Host "No departments currently have a Weather Closure." -ForegroundColor Yellow
+        Write-Host "No departments currently have an Unscheduled Closure." -ForegroundColor Yellow
         return (Read-NextAction)
     }
 
@@ -738,7 +738,7 @@ function Remove-WeatherClosure {
         }
         elseif ($step -eq 2) {
             Write-Host ""
-            Write-Host "Select Weather Closure(s) to remove:" -ForegroundColor Cyan
+            Write-Host "Select Unscheduled Closure(s) to remove:" -ForegroundColor Cyan
             for ($i = 0; $i -lt $names.Count; $i++) { Write-Host "$($i + 1). $($names[$i])" }
             Write-NavOptions -AllowBack
 
@@ -795,8 +795,8 @@ function Show-MainMenu {
     Write-Host "=== Closure Helper for 3CX ===" -ForegroundColor Cyan
     if ($Test) { Write-Host "*** TEST MODE - no changes will be made ***" -ForegroundColor Yellow }
     if ($DebugMode -eq 'on') { Write-Host "*** DEBUG LOGGING ON: $DebugLogFile ***" -ForegroundColor Yellow }
-    Write-Host "1. Add a Weather Closure"
-    Write-Host "2. View or Remove Weather Closures"
+    Write-Host "1. Add an Unscheduled Closure"
+    Write-Host "2. View or Remove Unscheduled Closures"
     Write-Host "3. Exit"
     Write-Host ""
 }
@@ -851,8 +851,8 @@ do {
     $choice = Read-Host "Select an option (1-3)"
 
     switch ($choice) {
-        '1' { if (Add-WeatherClosure)    { $choice = '3'; Write-Host "Exiting..." } }
-        '2' { if (Remove-WeatherClosure) { $choice = '3'; Write-Host "Exiting..." } }
+        '1' { if (Add-UnscheduledClosure)    { $choice = '3'; Write-Host "Exiting..." } }
+        '2' { if (Remove-UnscheduledClosure) { $choice = '3'; Write-Host "Exiting..." } }
         '3' { Write-Host "Exiting..." }
         default { Write-Host "Invalid selection. Enter 1-3." -ForegroundColor Red; Pause }
     }

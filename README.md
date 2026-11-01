@@ -11,18 +11,18 @@ Two menu-driven PowerShell scripts that manage department holidays on a 3CX V20 
 
 ## Closure Helper for 3CX
 
-Closure Helper for 3CX lets administrative staff add a closure alert, such as for a snow day, to one or more departments in under a minute.
+Closure Helper for 3CX lets non-technical administrative staff quickly add holidays that cover unscheduled closures, such as inclement weather and other emergencies, to one or more departments in under a minute.
 
 **What it does**
 
-- **Add a Weather Closure:** choose the departments (or Select All), enter the date, and the script creates an all-day, one-time closure in each department. The closure plays your closure greeting.
-- **View or Remove Weather Closures:** lists the departments that have an upcoming closure, so you can remove one or more closures across those departments at once.
+- **Add an Unscheduled Closure:** choose the departments (or Select All), enter the date, and the script creates an all-day, one-time closure in each department. The closure plays your closure greeting.
+- **View or Remove Unscheduled Closures:** lists the departments that have an upcoming closure, so you can remove one or more closures across those departments at once.
 
 **How it works**
 
-- A closure is created as a 3CX department holiday named `Weather Closure`.
+- A closure is created as a 3CX department holiday named `Unscheduled Closure`.
 - If a department has an old closure from a past date, it is replaced automatically.
-- If a department already has a future closure, the new one is named with its date, for example `Weather Closure - 01-15-2027`.
+- If a department already has a future closure, the new one is named with its date, for example `Unscheduled Closure - 01-15-2027`.
 - Every change is read back from 3CX to confirm it was saved, and a summary is shown at the end.
 
 ## Holiday Helper for 3CX
@@ -123,7 +123,7 @@ All settings are stored in `Helper-for-3CX-Settings.json`, which both scripts sh
 | `PhoneSystem` | Your 3CX web address |
 | `KeyVault` | Vault name, secret names, and an optional tenant ID |
 | `ExcludedDepartments` | Departments to hide from department lists |
-| `WeatherClosure` | Closure holiday name and greeting file name |
+| `UnscheduledClosure` | Closure holiday name and greeting file name |
 | `HolidaysAndEvents` | Holiday greeting, holiday list, and weekend observance rules (Holiday Helper for 3CX only) |
 | `Testing` | Mock data and debug logging |
 
