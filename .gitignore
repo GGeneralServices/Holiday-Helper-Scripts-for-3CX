@@ -1,0 +1,8 @@
+# Local settings (contains your organization's 3CX and Key Vault details)
+Helper-for-3CX-Settings.json
+
+# Debug logs (contain phone system data)
+*-Debug.log
+
+# Old diagnostics script
+3CX-Diagnostics.ps1
