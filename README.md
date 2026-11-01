@@ -15,12 +15,12 @@ Closure Helper for 3CX lets non-technical administrative staff quickly add holid
 
 **What it does**
 
-- **Add an Unscheduled Closure:** choose the departments (or Select All), enter the date, and the script creates an all-day, one-time closure in each department. The closure plays your closure greeting.
+- **Add an Unscheduled Closure:** choose the departments (or Select All), enter the date, and the script creates an all-day, one-time closure in each department. The closure plays closure greeting with the filename you specify in the settings file.
 - **View or Remove Unscheduled Closures:** lists the departments that have an upcoming closure, so you can remove one or more closures across those departments at once.
 
 **How it works**
 
-- A closure is created as a 3CX department holiday named `Unscheduled Closure`.
+- A closure is created as a 3CX department holiday named `Unscheduled Closure` (You can change this name in the settings file).
 - If a department has an old closure from a past date, it is replaced automatically.
 - If a department already has a future closure, the new one is named with its date, for example `Unscheduled Closure - 01-15-2027`.
 - Every change is read back from 3CX to confirm it was saved, and a summary is shown at the end.
@@ -29,9 +29,9 @@ Closure Helper for 3CX lets non-technical administrative staff quickly add holid
 
 Holiday Helper for 3CX lets 3CX administrators add holidays and events to many departments at the same time, instead of one department at a time in the admin console. It includes everything in Closure Helper for 3CX, plus:
 
-- **Add a Holiday:** pick holidays from your holiday list, the departments, and one or more years. Dates are calculated automatically, including holidays like "4th Thursday of November".
-- **Weekend holidays:** a holiday that falls on a weekend can be moved to the Friday before or the Monday after and labeled, for example `Christmas Day (Observed) 2027`. This behavior is configurable.
-- **Add a Special Event:** a one-time event on a specific date, either all day or with start and end times.
+- **Add a Holiday:** Pick holidays to add from a preset list you configure in the script itself. (Via the Manage Holiday List function), Pick the departments to add the holidays to, and one or more years to generate the holidays for. Holiday dates are calculated automatically for the years you entered. Including holidays that don't occur on a set date, like "4th Thursday of November".
+- **Weekend holidays:** A holiday that falls on a weekend can be moved to the Friday before or the Monday after and labeled, for example `Christmas Day (Observed) 2027`. This behavior is configurable.
+- **Add a Special Event:** a one-time event on a specific date, either all day or with start and end times. (The greeting used is set in the settings file)
 - **Manage Holiday List:** add, edit, or remove the holidays offered by Add a Holiday, using guided prompts.
 - **Duplicates and past dates:** holidays that already exist in a department, and dates that have already passed, are skipped automatically.
 
