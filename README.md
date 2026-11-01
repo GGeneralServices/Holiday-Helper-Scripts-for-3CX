@@ -1,6 +1,6 @@
 # Holiday Helper for 3CX & Closure Helper for 3CX
 
-Two menu-driven PowerShell scripts that manage department holidays on a 3CX V20 phone system through the 3CX Configuration API. No 3CX admin console experience is needed to use them.
+Two menu-driven PowerShell scripts that manage department holidays on a 3CX V20 phone system through the 3CX Configuration API. No 3CX admin console experience is needed to use them. For transparency sake, these scripts were coded by Claude at my direction. The have been tested on our 3CX system.
 
 | Script | File | Intended for |
 |---|---|---|
