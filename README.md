@@ -1,6 +1,6 @@
 # Holiday Helper for 3CX & Closure Helper for 3CX
 
-Two menu-driven PowerShell scripts that manage department holidays on a 3CX V20 phone system through the 3CX Configuration API. No 3CX admin console experience is needed to use them. For transparency sake, these scripts were coded by Claude at my direction. The have been tested on our 3CX system.
+Two menu-driven PowerShell scripts that manage department holidays on a 3CX V20 phone system through the 3CX Configuration API. No 3CX admin console experience is needed to use them.
 
 | Script | File | Intended for |
 |---|---|---|
@@ -97,7 +97,7 @@ For managed computers, these modules can also be deployed to all users with Intu
 3. Open the file in a text editor and fill in your settings. Instructions are at the top of the file, and each setting has a short note above it.
 4. Run the script again.
 
-When the script starts, it signs you in to Azure (if needed), reads the 3CX credentials from Key Vault, and opens the main menu.
+When the script starts, it signs you in to Azure (if needed), connects to 3CX, and opens the main menu. See [How credentials are handled](#how-credentials-are-handled) for details.
 
 ---
 
@@ -134,13 +134,28 @@ All settings are stored in `Helper-for-3CX-Settings.json`, which both scripts sh
 - **Try a safe run first:** run with `-Test` to preview changes.
 - **Debug logging:** set `Testing.DebugMode` to `"on"` to log every API call to `<script name>-Debug.log`. Secrets and access tokens are never logged.
 - **Mock data:** set `Testing.UseMockData` to `true` to try the menus with sample data and no connection to 3CX.
+- **Azure sign-in prompt during a session:** this is expected when the saved Azure sign-in has expired. The script needs it to renew its 3CX access token (see [How credentials are handled](#how-credentials-are-handled)).
 - **403 Forbidden errors:** check the API client's role and department (see Setup step 1). Then check that the computer's public IP address is a permitted IP address in Console Restrictions (see Setup step 2).
 
 ---
 
 ## Security
 
-- **No credentials on disk.** The API credentials are read from Azure Key Vault at runtime and are never written to disk or to logs.
+### How credentials are handled
+
+The 3CX API client ID and API key are stored only in Azure Key Vault. The scripts keep them in memory for as short a time as possible:
+
+1. **Connect:** the script reads the client ID and API key from Key Vault and uses them to request a 3CX access token.
+2. **Clear:** right after the token request, whether it succeeded or not, the credentials are cleared from memory. Only the access token is kept.
+3. **Renew:** 3CX tokens expire after about an hour. Before each API call, the script checks the token's expiry time. If it is within a minute of expiring, the script repeats steps 1 and 2 to get a new token. If 3CX rejects a token early (401 Unauthorized), the script gets a new token and retries the request once.
+
+The credentials and access tokens are never written to disk, the settings file, the screen, or the debug log.
+
+Because renewal reads Key Vault again, it relies on the user's saved Azure sign-in. This is normally silent, but if the sign-in has expired or your organization requires multi-factor re-authentication, an Azure sign-in prompt may appear during a session.
+
+### Other recommendations
+
+- **Least privilege:** use the lowest 3CX role that works for the API client, and rotate the API key periodically.
 - **Keep local files private.** `Helper-for-3CX-Settings.json` and the debug logs contain details about your phone system. Keep them out of source control (they are listed in `.gitignore`).
 
 ---
