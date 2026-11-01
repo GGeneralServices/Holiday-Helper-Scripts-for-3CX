@@ -10,6 +10,10 @@
     Settings are stored in Helper-for-3CX-Settings.json in the same folder as this script.
     If the file is missing, a template with instructions is created when the script starts.
 
+    The 3CX API credentials are read from Azure Key Vault only when a 3CX access token is
+    needed (at startup and about once an hour), and are cleared from memory right after.
+    Only the access token is kept between requests.
+
 .EXAMPLE
     & ".\HH-for-3CX.ps1"
     & ".\HH-for-3CX.ps1" -Test
@@ -318,9 +322,9 @@ function Get-3CXCredentials {
 }
 
 function Connect-3CX {
-    if (-not $script:ClientId -or -not $script:ClientSecret) {
-        if (-not (Get-3CXCredentials)) { return $false }
-    }
+    # Reads the API credentials from Key Vault, requests a 3CX access token, then clears the
+    # credentials from memory. Only the token is kept; it is renewed the same way when it expires.
+    if (-not (Get-3CXCredentials)) { return $false }
 
     Write-DebugLog "POST $PbxUrl/connect/token (client_id: $script:ClientId, client secret not logged)"
     $sw = [Diagnostics.Stopwatch]::StartNew()
@@ -338,6 +342,11 @@ function Connect-3CX {
         Write-Host "Authentication failed: $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
+    finally {
+        $script:ClientId     = $null
+        $script:ClientSecret = $null
+        Write-DebugLog "  API credentials cleared from memory"
+    }
 }
 
 function Invoke-3CXApi {
@@ -352,32 +361,41 @@ function Invoke-3CXApi {
         return
     }
 
-    if (-not $script:AccessToken -or (Get-Date) -ge $script:TokenExpires) {
-        if (-not (Connect-3CX)) { throw "Unable to authenticate to 3CX." }
-    }
-
-    $params = @{
-        Method  = $Method
-        Uri     = $uri
-        Headers = @{ Authorization = "Bearer $script:AccessToken" }
-    }
+    $params = @{ Method = $Method; Uri = $uri }
     if ($Body) {
         $params.Body        = ($Body | ConvertTo-Json -Depth 10)
         $params.ContentType = "application/json"
     }
 
-    Write-DebugLog "$($Method.ToUpper()) $uri"
-    if ($Body) { Write-DebugLog "  Request body: $(Format-DebugText $Body)" }
-    $sw = [Diagnostics.Stopwatch]::StartNew()
-    try {
-        $result = Invoke-RestMethod @params
-        Write-DebugLog "  Success ($($sw.ElapsedMilliseconds) ms)"
-        if ($null -ne $result) { Write-DebugLog "  Response: $(Format-DebugText $result)" }
-        return $result
-    }
-    catch {
-        Write-DebugLog "  FAILED ($($sw.ElapsedMilliseconds) ms): $(Get-ErrorDetail $_)"
-        throw
+    # Up to two attempts: if 3CX rejects the token (401), get a new one and retry once
+    for ($attempt = 1; $attempt -le 2; $attempt++) {
+        # Renew the token if there isn't one or it's within a minute of expiring
+        if (-not $script:AccessToken -or (Get-Date) -ge $script:TokenExpires) {
+            if ($script:AccessToken) { Write-DebugLog "Access token expired; requesting a new one" }
+            if (-not (Connect-3CX)) { throw "Unable to authenticate to 3CX." }
+        }
+        $params.Headers = @{ Authorization = "Bearer $script:AccessToken" }
+
+        Write-DebugLog "$($Method.ToUpper()) $uri"
+        if ($Body) { Write-DebugLog "  Request body: $(Format-DebugText $Body)" }
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        try {
+            $result = Invoke-RestMethod @params
+            Write-DebugLog "  Success ($($sw.ElapsedMilliseconds) ms)"
+            if ($null -ne $result) { Write-DebugLog "  Response: $(Format-DebugText $result)" }
+            return $result
+        }
+        catch {
+            Write-DebugLog "  FAILED ($($sw.ElapsedMilliseconds) ms): $(Get-ErrorDetail $_)"
+            $status = 0
+            if ($_.Exception.Response) { $status = [int]$_.Exception.Response.StatusCode }
+            if ($status -eq 401 -and $attempt -eq 1) {
+                Write-DebugLog "  Token was rejected; requesting a new token and retrying"
+                $script:AccessToken = $null
+                continue
+            }
+            throw
+        }
     }
 }
 
@@ -1372,11 +1390,11 @@ if ($UseMockData) { $Test = $true }
 $DebugMode = "$DebugMode".Trim().ToLower()
 Write-DebugLog "===== Session started: $([IO.Path]::GetFileName($PSCommandPath)) | Test mode: $([bool]$Test) | Mock data: $([bool]$UseMockData) | PowerShell $($PSVersionTable.PSVersion) ====="
 
-# Retrieve 3CX API credentials from Key Vault before showing the menu
+# Connect to 3CX before showing the menu (credentials are read from Key Vault, used to get a token, then cleared)
 if (-not $UseMockData) {
-    Write-Host "Retrieving 3CX API credentials from Key Vault..." -ForegroundColor Cyan
-    if (-not (Get-3CXCredentials)) {
-        Write-Host "The script cannot continue without the 3CX API credentials." -ForegroundColor Red
+    Write-Host "Connecting to 3CX..." -ForegroundColor Cyan
+    if (-not (Connect-3CX)) {
+        Write-Host "The script cannot continue without connecting to 3CX." -ForegroundColor Red
         Pause
         exit 1
     }
